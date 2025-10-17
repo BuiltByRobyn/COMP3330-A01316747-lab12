@@ -1,11 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import { Link } from '@tanstack/react-router'
+import { UploadExpenseForm } from './UploadExpenseForm'
 
 type Expense = { id: number; title: string; amount: number; fileUrl?: string | null }
 
 export function ExpensesList() {
   const qc = useQueryClient()
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [uploadingFor, setUploadingFor] = useState<number | null>(null)
   
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ['expenses'],
@@ -87,47 +90,76 @@ export function ExpensesList() {
 
   return (
     <div>
-      {/* ✨ Delete Error Display */}
       {deleteError && (
         <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700 mb-4">
           {deleteError}
         </div>
       )}
 
-      <ul className="mt-4 space-y-2">
+      <ul className="mt-4 space-y-4">
         {data.expenses.map((expense) => (
           <li 
             key={expense.id} 
-            className="flex items-center justify-between rounded border bg-white p-3 shadow-sm"
+            className="rounded border bg-white p-4 shadow-sm"
           >
-            <div className="flex flex-col">
-              <span className="font-medium">{expense.title}</span>
-              <span className="text-sm text-gray-600">${expense.amount}</span>
-            </div>
-            <div className="flex items-center gap-3">
-              {expense.fileUrl && (
-                <a
-                  href={expense.fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-blue-600 underline"
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex flex-col flex-1">
+                <Link
+                  to="/expenses/$id"
+                  params={{ id: String(expense.id) }}
+                  className="font-medium text-blue-600 hover:text-blue-800 underline"
                 >
-                  Download
-                </a>
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  if (confirm('Are you sure you want to delete this expense?')) {
-                    deleteExpense.mutate(expense.id)
-                  }
-                }}
-                disabled={deleteExpense.isPending}
-                className="text-sm text-red-600 underline disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {deleteExpense.isPending ? 'Removing…' : 'Delete'}
-              </button>
+                  {expense.title}
+                </Link>
+                <span className="text-sm text-gray-600 mt-1">${expense.amount}</span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                {expense.fileUrl && (
+                  <a
+                    href={expense.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-green-600 underline"
+                  >
+                    View Receipt
+                  </a>
+                )}
+                {!expense.fileUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setUploadingFor(uploadingFor === expense.id ? null : expense.id)}
+                    className="text-sm text-blue-600 underline"
+                  >
+                    {uploadingFor === expense.id ? 'Cancel' : 'Add Receipt'}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm('Are you sure you want to delete this expense?')) {
+                      deleteExpense.mutate(expense.id)
+                    }
+                  }}
+                  disabled={deleteExpense.isPending}
+                  className="text-sm text-red-600 underline disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {deleteExpense.isPending ? 'Removing…' : 'Delete'}
+                </button>
+              </div>
             </div>
+
+            {uploadingFor === expense.id && (
+              <div className="mt-3 pt-3 border-t">
+                <UploadExpenseForm
+                  expenseId={expense.id}
+                  onSuccess={() => {
+                    setUploadingFor(null)
+                    qc.invalidateQueries({ queryKey: ['expenses'] })
+                  }}
+                />
+              </div>
+            )}
           </li>
         ))}
       </ul>
