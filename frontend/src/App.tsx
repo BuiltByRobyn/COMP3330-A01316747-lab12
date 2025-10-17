@@ -11,7 +11,7 @@ export default function App() {
 
   useEffect(() => {
     // Check if user is logged in
-    fetch('http://localhost:3000/api/auth/me', {
+    fetch('/api/auth/me', { 
       credentials: 'include'
     })
       .then(r => r.json())
@@ -23,11 +23,11 @@ export default function App() {
   }, [])
 
   const handleLogin = () => {
-    window.location.href = 'http://localhost:3000/api/auth/login'
+ window.location.href = '/api/auth/login'
   }
 
   const handleLogout = () => {
-    window.location.href = 'http://localhost:3000/api/auth/logout'
+    window.location.href = '/api/auth/logout'
   }
 
   return (
