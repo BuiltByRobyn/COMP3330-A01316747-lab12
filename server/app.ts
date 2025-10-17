@@ -6,6 +6,7 @@ import { cors } from 'hono/cors'
 import { authRoute } from './auth/kinde'
 import { secureRoute } from './routes/secure'
 import { uploadRoute } from './routes/upload'
+import { serveStatic } from 'hono/bun'
 
 
 export const app = new Hono()
@@ -31,7 +32,7 @@ app.use('*', async (c, next) => {
 
 
 // Health & root
-app.get('/', (c) => c.json({ message: 'OK' }))
+app.use('/*', serveStatic({ root: './server/public' }))
 app.get('/health', (c) => c.json({ status: 'healthy' }))
 
 app.route('/api/auth', authRoute)
@@ -42,5 +43,15 @@ app.route('/api/secure', secureRoute)
 app.route('/api/expenses', expensesRoute)
 
 app.route('/api/upload', uploadRoute)
+
+
+app.get('*', async (c) => {
+  const path = c.req.path
+  if (path.startsWith('/api')) {
+    return c.notFound()
+  }
+  
+  return c.html(await Bun.file('./server/public/index.html').text())
+})
 
 export default app
